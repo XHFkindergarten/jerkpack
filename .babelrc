@@ -1,0 +1,17 @@
+{
+  "plugins": [
+    ["@babel/plugin-transform-runtime", {           
+      "corejs": 2,
+      "helpers": true,
+      "regenerator": true,
+      "useESModules": false
+    }],
+    "@babel/preset-react"
+ ],
+  "presets": [
+    "env",
+    "stage-3",
+    "react"
+  ]
+}
+

@@ -1,0 +1,12 @@
+{
+  "name": "jerkpack",
+  "version": "1.0.0",
+  "description": "模拟webpack打包工具",
+  "bin": "./src/index.js",
+  "repository": "https://github.com/XHFkindergarten/jerkpack.git",
+  "author": "风魔小次郎",
+  "license": "MIT",
+  "devDependencies": {
+    "tapable": "^1.1.3"
+  }
+}
