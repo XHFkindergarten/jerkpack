@@ -1,20 +1,34 @@
 #! /usr/bin/env node
 
-const filePath = './wahtever.js'
+// const filePath = './wahtever.js'
 
-const types = require('@babel/types')
+// const types = require('@babel/types')
 
-const output = types.stringLiteral(filePath)
-console.log(output)
-// 
+// const output = types.stringLiteral(filePath)
 
-// const fs = require('fs')
+// console.log(output)
 
-// const file = fs.readFileSync(path, 'utf-8')
+const path = './src/main.js'
 
-// const babylon = require('babylon')
+const fs = require('fs')
+const { type } = require('os')
 
-// const ast = babylon.parse(file)
+let file = fs.readFileSync(path, 'utf-8').trim()
+
+
+
+
+console.log(file)
+
+// fs.writeFileSync('./tempfile', file)
+
+// const ast = require('babylon').parse(file)
+
+// ast.program.body.forEach(item => {
+//   console.log(item)
+// });
+
+// console.log(ast.program.body[0].declarations)
 
 // const traverse = require('@babel/traverse').default
 

@@ -1,12 +1,19 @@
 import React from 'react'
 import MyName from './myName'
 function Compo () {
+  const name = 'XHFkindergarten'
   return (
     <div>
       <MyName />
-      <span>Running with Nerv</span>
+      <h>
+        <span>Hello, React</span>
+      </h>
     </div>
   )
 }
 
-export default Compo;
+export function a () {}
+
+export const a = 1
+
+export default Compo

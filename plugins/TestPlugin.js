@@ -4,8 +4,8 @@
 
 class TestPlugin {
   apply(compiler) {
-    compiler.hooks.emit.tap("just4fun", function() {
-      console.log('.^ ^')
+    compiler.hooks.beforeRun.tapAsync("just4fun", function() {
+      console.log('[Success] 开始编译')
     })
   }
 }

@@ -2,6 +2,8 @@ const jerkpack = require('./jerkpack/src/index')
 
 const resolve = dir => require('path').join(__dirname, dir)
 
+const ReactLoader = require('./loaders/ReactLoader')
+
 const TestPlugin = require('./plugins/TestPlugin')
 
 // 创建配置项
@@ -21,11 +23,9 @@ const config = {
         include: [
           resolve('src')
         ],
-        use: [
-          {
-            loader: 'babel-loader'
-          }
-        ]
+        use: {
+          loader: ReactLoader
+        }
       }
     ]
   },
