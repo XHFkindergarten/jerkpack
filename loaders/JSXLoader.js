@@ -1,11 +1,21 @@
 /**
- * JSX语法编译器
+ * 用正则实现一个JSX语法编译器
  */
-module.exports = function NervLoader (source) {
+module.exports = function ReactLoader (source) {
+  // 收集当前模块内的所有变量,作用域链上的变量没法收集，因为需要进行词法分析
+  const moduleVariableSet = new Set()
   // 将ES6的import和export语法转换为CommonJS
   // [a-zA-Z\$_][a-zA-Z\d_]* 为检索合理的变量命名
   const ImportReg = /import\s+([a-zA-Z\$_][a-zA-Z\d_]*)\s*from\s*'(\S+)'/g
-  source = source.replace(ImportReg, `const $1 = require('$2')`)
+  source = source.replace(ImportReg, (_, variableName, depend) => {
+    if (moduleVariableSet.has(variableName)) {
+      // 如果存在变量名重复
+      throw new SyntaxError('存在已经声明过的变量')
+    }
+    // 收集被引用的变量
+    moduleVariableSet.add(variableName)
+    return `const ${variableName} = require('${depend}')`
+  })
   const ExportReg = /export\s+default/g
   source = source.replace(ExportReg, `module.exports =`)
   const ExportVariableReg = /export\s+(const|let|var)\s+([a-zA-Z\$_][a-zA-Z\d_]*)\s+/g
@@ -55,6 +65,8 @@ module.exports = function NervLoader (source) {
     })
     return obj2JSONSTR(output)
   }
+  // 纯Text的标签
+  const TEXT_LABEL_NAME = 'TEXTLABEL'
   /**
    * 将一段JSX文本转换成JS格式
    * React.createElement(
@@ -63,8 +75,6 @@ module.exports = function NervLoader (source) {
    *   children: Array<Element>
    * )
    */
-  // 纯Text的标签
-  const TEXT_LABEL_NAME = 'TEXTLABEL'
   const JSX2Obj = target => {
     // 去除换行符
     target = target.replace(/[\n\r]/g, '')
@@ -127,20 +137,21 @@ module.exports = function NervLoader (source) {
     // 深度遍历队列结构生成最终代码
     const dfs = item => {
       if (item.type === TEXT_LABEL_NAME) {
+        // 纯文本直接返回文字内容
         return item.props
       }
       return `React.createElement(
-    ${item.type},
+    ${moduleVariableSet.has(item.type) ? item.type : `'${item.type}'`},
     ${item.props},
     ${
       !item.children || item.children.length === 0
-        ? 'null' 
+        ? 'null'
         : `[
         ${item.children.map(i => dfs(i))}
       ]`}
   )`
     }
-    return dfs(queue[0].children[0])
+    return 'return ' + dfs(queue[0].children[0])
   }
 
   source = source.replace(JSXReg, (...args) => JSX2Obj(args[1]))

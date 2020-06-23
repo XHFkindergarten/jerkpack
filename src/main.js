@@ -1,4 +1,5 @@
 import React from 'react'
+import { render } from 'react-dom'
 import MyName from './myName'
 function Compo () {
   const name = 'XHFkindergarten'
@@ -12,8 +13,5 @@ function Compo () {
   )
 }
 
-export function a () {}
+render(<Compo />, document.getElementById('container'))
 
-export const a = 1
-
-export default Compo

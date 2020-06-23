@@ -2,7 +2,8 @@ const jerkpack = require('./jerkpack/src/index')
 
 const resolve = dir => require('path').join(__dirname, dir)
 
-const ReactLoader = require('./loaders/ReactLoader')
+const JSXLoader = require('./loaders/JSXLoader')
+const BabelLoader = require('./loaders/babelLoader')
 
 const TestPlugin = require('./plugins/TestPlugin')
 
@@ -24,7 +25,8 @@ const config = {
           resolve('src')
         ],
         use: {
-          loader: ReactLoader
+          // loader: JSXLoader
+          loader: BabelLoader
         }
       }
     ]
