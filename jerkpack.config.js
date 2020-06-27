@@ -1,21 +1,16 @@
-const jerkpack = require('./jerkpack/src/index')
-
+const BabelLoader = require('./loaders/babelLoader')
+const TestPlugin = require('./plugins/TestPlugin')
 const resolve = dir => require('path').join(__dirname, dir)
 
-const JSXLoader = require('./loaders/JSXLoader')
-const BabelLoader = require('./loaders/babelLoader')
-
-const TestPlugin = require('./plugins/TestPlugin')
-
-// 创建配置项
-
-const config = {
+module.exports = {
   // 入口文件地址
-  entry: './src/main.js',
+  entry: './src/index.js',
   // 输出文件地址
   output: {
-    path: resolve('dist')
+    path: resolve('dist'),
+    fileName: 'bundle.js'
   },
+  // loader
   module: {
     rules: [
       {
@@ -25,8 +20,7 @@ const config = {
           resolve('src')
         ],
         use: {
-          // loader: JSXLoader
-          loader: BabelLoader
+          loader: BabelLoader // 通过Babel编译react代码
         }
       }
     ]
@@ -35,9 +29,3 @@ const config = {
     new TestPlugin() // 一个测试plugin
   ]
 }
-
-jerkpack(config, function (err, stats) {
-  if (err || stats.hasError()) {
-    console.log('编译出错惹 qaq')
-  }
-})
