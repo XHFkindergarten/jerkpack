@@ -5,6 +5,31 @@
  */ 
 const path = require('path')
 const fs = require('fs')
+const crypto = require('crypto')
+
+/**
+ * 异步读取文件内容并且返回【代码字符串】和【唯一MD5哈希标识】
+ * @param {*} path 文件路径
+ */
+const readFileWithHash = (path) => new Promise((resolve, reject) => {
+  // 创建md5哈希对象
+  const md5hash = crypto.createHash('md5')
+  const stream = fs.createReadStream(path)
+  // data收集代码片段
+  let data = ''
+  stream.on('data', chunk => {
+    // md5哈希根据文件内容不断更新
+    md5hash.update(chunk)
+    data += chunk
+  })
+  stream.on('error', err => reject(err))
+  stream.on('end', () => {
+    // 生成唯一MD5标识
+    const md5hashStr = md5hash.digest('hex').toUpperCase()
+    // 返回文件代码字符串和哈希值
+    resolve([data, md5hashStr])
+  })
+})
 
 /**
  * @description: 根据用户在代码中的引用生成相对根目录的相对路径
@@ -45,3 +70,4 @@ function completeFilePath(path) {
 
 exports.getRootPath = getRootPath
 exports.completeFilePath = completeFilePath
+exports.readFileWithHash = readFileWithHash

@@ -12,6 +12,8 @@ import React from 'react'
 import ReactDom from 'react-dom'
 import App from './App'
 ReactDom.render(<App />, document.querySelector('#container'))
+```
+```jsx
 // App.js
 import React from 'react'
 import Switch from './Switch.js'
@@ -37,6 +39,8 @@ export default class App extends React.Component {
     )
   }
 }
+```
+```jsx
 // Switch.js
 import React from 'react'
 
@@ -175,6 +179,10 @@ ok，写到这里，作为一个开发者需要配置的所有配置项都已经
 
 ## 工具视角
 
+首先，我们需要了解Webpack打包的流程
+
+![](./readme/webpack4flow.png)
+
 首先，无论如何我们要将打包方法进行输出，并且在这个打包方法中接受两个参数，一个是配置项对象，另一个则是错误回调。
 
 ```jsx
@@ -198,7 +206,7 @@ module.exports = webpack
 
 我们先在 `Compiler` 类的构造方法里面收集用户传入的信息（正版webpack中，compiler实例所需要的信息远不止我们传入的这些，所以在挂在数据之前需要对实例的数据进行初始化，此处省略了这个步骤）
 
-```jsx
+```javascript
 class Compiler {
   constructor(config, _callback) {
     const {
@@ -224,7 +232,7 @@ class Compiler {
 
 同时，我们在构造函数中将所有的plugin挂载到实例的hooks属性中去。webpack的生命周期管理基于一个叫做 `tapable` 的库，通过这个库，我们可以创建一个发布订阅模型的钩子，然后通过将函数挂载到实例上（这些钩子事件的回调我们可以同步触发、异步触发甚至进行链式回调），在合适的时机触发钩子上的所有事件。例如我们在hooks上声明各个生命周期的钩子:
 
-```jsx
+```javascript
 const { AsyncSeriesHook } = require('tapable') // 此处我们创建了一些异步钩子
 constructor(config, _callback) {
   ...

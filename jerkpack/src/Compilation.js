@@ -10,9 +10,14 @@ const parser = require('@babel/parser')
 const traverse = require('@babel/traverse').default
 const types = require('@babel/types')
 const generator = require('@babel/generator').default
-const { getRootPath, completeFilePath } = require('./utils')
+const { 
+  getRootPath,
+  completeFilePath,
+  readFileWithHash
+} = require('./utils')
 const path = require('path')
 
+const resolve = path.resolve
 
 module.exports = class Compilation {
   constructor(props) {
@@ -20,13 +25,16 @@ module.exports = class Compilation {
       entry,
       root,
       loaders,
-      hooks
+      hooks,
+      distPath,
+      distName
     } = props
     this.entry = entry
     this.root = root
     this.loaders = loaders
     this.hooks = hooks
-    this.moduleWalker(this.entry)
+    this.distPath = distPath
+    this.assets = {}
   }
   // 入口路径
   entry = ''
@@ -34,28 +42,35 @@ module.exports = class Compilation {
   // 存放处理完毕的模块代码Map
   moduleMap = {}
 
+  // 开始编译
+  async make() {
+    await this.moduleWalker(this.entry)
+  }
+  
+
   // 根据依赖将所有被引用过的文件都进行编译
-  moduleWalker(sourcePath) {
-    console.log(sourcePath)
+  async moduleWalker(sourcePath) {
     if (sourcePath in this.moduleMap) return
     // 在读取文件时，我们需要完整的以.js结尾的文件路径
     sourcePath = completeFilePath(sourcePath)
-    const sourceCode = this.loaderParse(sourcePath)
+    const [ sourceCode, md5Hash ] = await this.loaderParse(sourcePath)
     const modulePath = getRootPath(this.root, sourcePath, this.root)
     // 获取模块编译后的代码和模块内的依赖数组
     const [ moduleCode, relyInModule ] = this.parse(sourceCode, path.dirname(modulePath))
     // 将模块代码放入ModuleMap
     this.moduleMap[modulePath] = moduleCode
+    this.assets[modulePath] = md5Hash
     // 再依次对模块中的依赖项进行解析
     for(let i=0;i<relyInModule.length;i++) {
-      this.moduleWalker(relyInModule[i], path.dirname(relyInModule[i]))
+      await this.moduleWalker(relyInModule[i], path.dirname(relyInModule[i]))
     }
   }
 
   // 生成源代码
-  loaderParse(entryPath) {
+  async loaderParse(entryPath) {
     // 用utf8格式读取文件内容
-    let content = fs.readFileSync(entryPath, 'utf-8')
+    // let content = fs.readFileSync(entryPath, 'utf-8')
+    let [ content, md5Hash ] = await readFileWithHash(entryPath)
     // 获取用户注入的loader
     const { loaders } = this
     // 依次遍历所有loader
@@ -77,10 +92,7 @@ module.exports = class Compilation {
                   typeof cur.loader === 'function'
                   ? cur.loader : _ => _
                 )
-            console.log(loaderHandler.name)
             content = loaderHandler(content)
-            console.log(content)
-            console.log(loaderHandler.name + 'end')
           }
         } else if (typeof use.loader === 'string') {
           const loaderHandler = require(use.loader)
@@ -91,7 +103,7 @@ module.exports = class Compilation {
         }
       }
     }
-    return content
+    return [ content, md5Hash ]
   }
 
   /**

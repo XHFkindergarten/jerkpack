@@ -2605,8 +2605,6 @@ var options = {
 };
 
 function render(vnode, container, callback) {
-  console.log(1);
-
   if (!container) {
     throw new Error(container + " should be a DOM Element");
   }
