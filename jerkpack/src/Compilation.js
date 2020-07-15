@@ -69,7 +69,6 @@ module.exports = class Compilation {
   // 生成源代码
   async loaderParse(entryPath) {
     // 用utf8格式读取文件内容
-    // let content = fs.readFileSync(entryPath, 'utf-8')
     let [ content, md5Hash ] = await readFileWithHash(entryPath)
     // 获取用户注入的loader
     const { loaders } = this

@@ -1,1 +1,1 @@
-"use strict";var _nervjs=_interopRequireDefault(require("nervjs"));var _App=_interopRequireDefault(require("./App"));function _interopRequireDefault(obj){return obj&&obj.__esModule?obj:{"default":obj};}_nervjs["default"].render(/*#__PURE__*/_nervjs["default"].createElement(_App["default"],null),document.querySelector('#container'));
+import React from"nervjs";import ReactDom from"nervjs";import App from"./App";ReactDom.render(/*#__PURE__*/React.createElement(App,null),document.querySelector('#container'));

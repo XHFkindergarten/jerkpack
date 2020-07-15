@@ -1,10 +1,10 @@
 ## 背景
 
-`webpack` 迭代到4.x版本后源码十分庞大，对各种场景进行了高度抽象，而我们这次会从一个最简单的webpack配置入手，从工具设计者的角度开发一款乞丐版的webpack，由于是乞丐版，而且兼容的场景也十分单一，我们暂且将这个工具命名为 `jerkpack` 。
+`webpack` 迭代到4.x版本后，其源码已经十分庞大，对各种开发场景进行了高度抽象，阅读成本也愈发昂贵。但是为了了解其内部的工作原理。让我们尝试从一个最简单的webpack配置入手，从工具设计者的角度开发一款低配版的webpack。
 
 ## 开发者视角
 
-假设某一天，我们需要开发一个react单页面,这个页面有一行文字和一个按钮，每次点击按钮的时候文字都会发生变化。我们在 `[根目录]/src` 下新建了三个简单的react文件(为了模拟 `webpack` 根据模块追踪打包的流程，我们建立了一个简单的引用关系:
+假设某一天，我们需要开发一个react单页面,这个页面有一行文字和一个按钮，每次点击按钮的时候文字都会发生变化。于是我们在 `[项目根目录]/src` 下新建了三个简单的react文件(为了模拟 `webpack` 根据模块追踪打包的流程，我们建立了一个简单的引用关系:
 
 ```jsx
 // index.js
@@ -51,12 +51,10 @@ export default function Switch({ handleToggle }) {
 }
 ```
 
-接着我们需要配置一个文件来告诉 `jerkpack` 它应该如何工作，我们在根目录下新建一个文件 `jerkpack.config.js` 并且向其中写入一些基础的配置
+接着我们需要配置一个文件来告诉 `webpack` 它应该如何工作，我们在根目录下新建一个文件 `webpack.config.js` 并且向其中写入一些基础的配置
 
 ```jsx
-// jerkpack.config.js
-const BabelLoader = require('./loaders/babelLoader')
-const TestPlugin = require('./plugins/TestPlugin')
+// webpack.config.js
 const resolve = dir => require('path').join(__dirname, dir)
 
 module.exports = {
@@ -88,7 +86,7 @@ module.exports = {
 }
 ```
 
-其中 `module` 的作用是在test字段和文件名匹配成功时就用对应的loader对代码进行编译，webpack本身只认识 `.js` 、 `.json` 这两种类型的文件，有了loader就可以对css以及其他格式的文件进行识别和处理。而对于React文件而言，我们需要将JSX语法转换成纯JS语法，即 `React.createElement` 方法，代码才可能被浏览器所识别。而平常我们用来处理react代码的是 `babel-loader` ，但是它只有在正版webpack封装的语境下才能正常运行，但是好在 `@bable/core` 是公用的，所以我们自己封装了一个BabelLoader
+其中 `module` 的作用是在test字段和文件名匹配成功时就用对应的loader对代码进行编译，webpack本身只认识 `.js` 、 `.json` 这两种类型的文件，有了loader就可以对css以及其他格式的文件进行识别和处理。而对于React文件而言，我们需要将JSX语法转换成纯JS语法，即 `React.createElement` 方法，代码才可能被浏览器所识别。而平常我们用来处理react代码的是 `babel-loader` ，但是它只有在正版webpack封装的语境下才能正常运行，但是好在 `@bable/core` 是公用的，所以我们自己封装了一个简易的BabelLoader
 
 ```jsx
 const babel = require('@babel/core')
@@ -101,7 +99,7 @@ module.exports = function BabelLoader (source) {
 }
 ```
 
-当然，编译规则需要在 `babel.config.js` 文件里进行配置
+当然，编译规则可以作为配置项传入，但是为了模拟真实的开发场景，我们需要配置一下 `babel.config.js`文件
 
 ```jsx
 module.exports = function (api) {
@@ -113,7 +111,7 @@ module.exports = function (api) {
           "ie": "8"
         },
       }],
-      '@babel/preset-react', // 编译JSX用的是这个规则
+      '@babel/preset-react', // 编译JSX
     ],
     "plugins": [
       ["@babel/plugin-transform-template-literals", {
@@ -125,7 +123,7 @@ module.exports = function (api) {
 }
 ```
 
-生成的代码会是这个亚子
+之前的React代码编译出来会是这个亚子
 
 ```jsx
 "use strict";
@@ -153,7 +151,7 @@ function Switch(_ref) {
 
 Tips: 这个 `_interopRequireDefault` 的目的是为了兼容一些不符合 `babel` 规则的模块添加 `default` 属性并指向模块本身。防止在 `export default` 时出错。
 
-而至于plugin则是一些插件，这些插件可以将函数注册在webpack的生命周期钩子上，在生成最终文件之前可以对编译的结果做一些特殊的处理，例如模块分包、插入html文件、甚至是在每一个文件头部插入类似时间作者之类的注释。
+而至于plugin则是一些插件，这些插件可以将函数注册在webpack的生命周期钩子上，在生成最终文件之前可以对编译的结果做一些特殊的处理，例如模块分包、插入html文件等功能。
 
 这里我们只需要写一个简单的方法，在编译开始之前，也就是 `beforeRun` 这个钩子触发的时候，输出一个log意思一下即可
 
@@ -175,13 +173,13 @@ class TestPlugin {
 module.exports = TestPlugin
 ```
 
-ok，写到这里，作为一个开发者需要配置的所有配置项都已经配置完毕，接下来需要的就是通过 `jerkpack` 将代码打包成我们希望看到的样子
+ok，写到这里，作为一个开发者需要配置的所有配置项都已经配置完毕，接下来需要的就是通过 `webpack` 将代码打包成我们希望看到的样子
 
 ## 工具视角
 
-首先，我们需要了解Webpack打包的流程
+接下来，我们需要了解Webpack打包的流程
 
-![](./readme/webpack4flow.png)
+![](https://img10.360buyimg.com/ling/jfs/t1/128728/18/7153/65515/5f0de750Efd120fdc/61a67a0a2106d3ce.png)
 
 首先，无论如何我们要将打包方法进行输出，并且在这个打包方法中接受两个参数，一个是配置项对象，另一个则是错误回调。
 
@@ -200,11 +198,11 @@ function webpack(config, callback) {
 module.exports = webpack
 ```
 
-从代码中可以看出，我们需要实现一个 `Compiler` 类，这个类需要收集开发者传入的所有配置信息，然后指挥整体的编译流程。我们可以把 `Compiler` 看做一个公司的老板，它收集了所有信息统领全局。在查阅了所有信息后它会生成另一个类 `Compilation` 的实例，它相当于老板秘书，需要去调动各个部门按照老板的要求开始工作，而loader和plugin则相当于各个部门，只有在他们专长的工作出现时（js, css, scss, jpg, png...)才会去处理
+从代码中可以看出，我们需要实现一个 `Compiler` 类，这个类需要收集开发者传入的所有配置信息，然后指挥整体的编译流程。我们可以把 `Compiler` 理解为公司老板，它收集了所有信息统领全局。在查阅了所有信息报告后它会生成另一个类 `Compilation` 的实例，它相当于老板秘书，需要去调动各个部门按照要求开始工作，而loader和plugin则相当于各个部门，只有在他们专长的工作出现时（js, css, scss, jpg, png...)才会去处理
 
 ### 1. 构建配置信息
 
-我们先在 `Compiler` 类的构造方法里面收集用户传入的信息（正版webpack中，compiler实例所需要的信息远不止我们传入的这些，所以在挂在数据之前需要对实例的数据进行初始化，此处省略了这个步骤）
+我们先在 `Compiler` 类的构造方法里面收集用户传入的信息（正版webpack中，compiler实例所需要的信息远不止我们传入的这些，所以在挂载数据之前需要对实例的数据进行初始化，此处省略了这个步骤）
 
 ```javascript
 class Compiler {
@@ -265,7 +263,7 @@ run() {
 }
 ```
 
-如果我们声明了一个hook但是没有挂载任何方法，在call触发的时候是会报错的。但是正版webpack的每一个生命周期钩子除了挂载我们自己的plugin,还挂载了一些官方默认挂载的plugin，所以不会有这个问题。更多关于tapable的用法也可以移步 [Tapable](https://github.com/webpack/tapable) 
+如果我们声明了一个hook但是没有挂载任何方法，在call触发的时候是会报错的。但是正版webpack的每一个生命周期钩子除了挂载我们自己的plugin,还挂载了一些官方默认需要挂载的 `plugin`，所以不会有这个问题。更多关于tapable的用法也可以移步 [Tapable](https://github.com/webpack/tapable) 
 
 ### 3. 编译
 
@@ -288,12 +286,12 @@ class Compilation {
 }
 ```
 
-为了简化步骤，我希望在constructor中直接开始对文件进行编译。这里要有一个 `moduleWalker` 方法，顾名思义，这个方法将会从入口模块开始进行编译，并且顺藤摸瓜将构建过程中所有的模块进行递归处理。
+为了简化步骤，我希望在constructor中直接开始对文件进行编译。这里需要声明一个 `moduleWalker` 方法(这个名字是笔者取的，不是webpack官方取的)，顾名思义，这个方法将会从入口模块开始进行编译，并且顺藤摸瓜将构建过程中所有的模块递归进行编译。
 
-编译步骤分为两步
+编译步骤主要分为两步
 
 1. 第一步是使用所有满足条件的loader对其进行编译并且返回编译之后的代码
-2. 第二步相当于是webpack自己的编译步骤，需要将所有的 `require` 方法替换成webpack自己定义的 `__webpack_require__` 函数。因为所有被编译后的模块将被webpack存储在一个闭包的对象 `moduleMap` 中，所有的模块引用都将从这个全局的 `moduleMap` 中获取代码。
+2. 第二步相当于是webpack自己的编译步骤，其中最核心的目的是构建各个独立模块之间的调用关系。我们需要做的是将所有的 `require` 方法替换成webpack自己定义的 `__webpack_require__` 函数。因为所有被编译后的模块将被webpack存储在一个闭包的对象 `moduleMap` 中，当模块被引用时，都将从这个全局的 `moduleMap` 中获取代码。
 
 在完成第二步编译的同时，会对当前模块内的引用进行收集，并且作为 `moduleWalker` 方法的回调返回到 `Compilation` 中， `moduleWalker` 方法会对这些依赖模块进行递归的编译。当然里面可能存在重复引用，我们会根据引用文件的路径生成一个独一无二的key值，在key值重复时进行跳过。
 
@@ -304,38 +302,36 @@ class Compilation {
 moduleMap = {}
 
 // 根据依赖将所有被引用过的文件都进行编译
-moduleWalker(sourcePath) {
-	// 资源key重复时跳过
+async moduleWalker(sourcePath) {
   if (sourcePath in this.moduleMap) return
   // 在读取文件时，我们需要完整的以.js结尾的文件路径
   sourcePath = completeFilePath(sourcePath)
-  // 第一次编译，loader编译
-  const sourceCode = this.loaderParse(sourcePath)
+  const [ sourceCode, md5Hash ] = await this.loaderParse(sourcePath)
   const modulePath = getRootPath(this.root, sourcePath, this.root)
-  // 第二部编译，替换require为__webpack_require__
   // 获取模块编译后的代码和模块内的依赖数组
   const [ moduleCode, relyInModule ] = this.parse(sourceCode, path.dirname(modulePath))
   // 将模块代码放入ModuleMap
   this.moduleMap[modulePath] = moduleCode
-  // 再依次对模块中的依赖项进行递归解析
+  this.assets[modulePath] = md5Hash
+  // 再依次对模块中的依赖项进行解析
   for(let i=0;i<relyInModule.length;i++) {
-    this.moduleWalker(relyInModule[i], path.dirname(relyInModule[i]))
+    await this.moduleWalker(relyInModule[i], path.dirname(relyInModule[i]))
   }
 }
 ```
 
 如果将dfs的路径给log出来，我们就可以看到这样的流程
 
-![](./readme/WechatIMG7.png)
+![](https://img11.360buyimg.com/ling/jfs/t1/111917/39/12380/583016/5f0de3e7E49252753/45677fe0e1ff8e4e.png)
 
 而对于第一次编译函数 `loaderParse` ，就是判断正则字段是否匹配，然后调用loader对代码进行处理，如果loader是个数组的话则按照倒序依次处理。（正序倒序倒是没有什么意义，只不过是因为webpack源码是用compose的方式来依次调用的）
 
 ### ii.  `loaderParse` loader编译函数
 
 ```jsx
-loaderParse(entryPath) {
+async loaderParse(entryPath) {
   // 用utf8格式读取文件内容
-  let content = fs.readFileSync(entryPath, 'utf-8')
+  let [ content, md5Hash ] = await readFileWithHash(entryPath)
   // 获取用户注入的loader
   const { loaders } = this
   // 依次遍历所有loader
@@ -358,8 +354,6 @@ loaderParse(entryPath) {
                 ? cur.loader : _ => _
               )
           content = loaderHandler(content)
-          console.log(content)
-          console.log(loaderHandler.name + 'end')
         }
       } else if (typeof use.loader === 'string') {
         const loaderHandler = require(use.loader)
@@ -370,19 +364,19 @@ loaderParse(entryPath) {
       }
     }
   }
-  return content
+  return [ content, md5Hash ]
 }
 ```
 
 获得了loader处理过的代码之后，理论上任何一个模块都已经可以在浏览器或者单元测试直接使用了。但是我们的代码是一个整体，还需要一种合理的方式来组织代码之间互相引用的关系。
 
-而我们的做法是将每个模块相对于根目录的相对路径作为key，模块的代码字符串作为value生成一个对象。只有入口文件的模块会被立即执行，而入口文件所依赖的模块都会被替换后的 `__webpack_require__` 函数从这个代码对象中取出，通过 `eval` 来获取模块真正暴露的内容。当然这只是我们当前求快的写法，众所周知对于JS这种解释型语言，eval的性能是非常糟糕的。（怎样去组织这些模块，又是一个值得探讨的问题了= =）
+而我们的做法是将每个模块相对于根目录的相对路径作为key，模块的代码字符串作为value生成一个对象。只有入口文件的模块会被立即执行，而入口文件所依赖的模块都会被替换后的 `__webpack_require__` 函数从这个代码对象中取出，通过 `eval` 来获取模块真正暴露的内容。当然这只是我们当前求快的写法，众所周知对于JS这种解释型语言，eval的性能是非常糟糕的。（事实上大部分打包工具都是用对象存储一个个闭包的方式来调用，例如最近火热的 `esBuild` 打包出来的代码大概也是这个样子）
 
-总而言之，在第二部编译 `parse` 函数中我们需要做的事情其实很简单，就是将所有模块中的 `require` 方法的函数名称替换成 `__webpack_require__` 即可。我们在此处使用的是babel全家桶。babel作为当前最好的JS编译器，分析代码的步骤主要分为两步，第一步叫词法分析，第二步叫语法分析。简单来说，就是对代码片段进行逐词分析，并且生成各个类型对应的 `babel-node` 。(在词法分析中，所有的元素，即使是字符串也是封装过的node)。然后进行语法分析，根据上一个单词生成的语境，判断当前单词所起的作用。
+总而言之，在第二部编译 `parse` 函数中我们需要做的事情其实很简单，就是将所有模块中的 `require` 方法的函数名称替换成 `__webpack_require__` 即可。(至于`__webpack_require__`函数我们可以在最终生成代码时再进行定义)。我们在这一步使用的是babel全家桶。babel作为当前最好的JS编译器，分析代码的步骤主要分为两步，分别是词法分析和语法分析。简单来说，就是对代码片段进行逐词分析，并且生成各个类型对应的 `babel-node` 。(在词法分析中，所有的元素，即使是字符串也必须是babel封装过的类型)。然后进行语法分析，根据上一个单词生成的语境，判断当前单词所起的作用。
 
-我们在这里可以先借助 `@babel/parser` 对代码进行词法分析，将代码拆解由 `babel-node` 组成的AST抽象语法树。然后通过 `@babel/traverse` 对node进行遍历，通过这个库。我们能够在在遇到特定node类型的时候执行特定的方法，这里我们要做的就是将调用类型 `CallExpression` 且name为 `require` 的单词名称替换成name为 `__webpack_require__` 的节点（require('react')中的字符串node `react` 需要借助 `@babel/types` 这个库来生成），最后通过 `@babel/generator` 生成新的代码
+我们在这里可以先借助 `@babel/parser` 对代码进行词法分析，将代码拆解为一棵由 `babelNode` 组成的AST抽象语法树。然后通过 `@babel/traverse` 对node进行遍历，通过这个库。我们能够在在遇到特定node类型的时候执行特定的方法，这里我们要做的就是将调用类型 `CallExpression` (函数调用表达式)且name为 `require` 的单词名称替换成name为 `__webpack_require__` 的节点，最后通过 `@babel/generator` 生成新的代码
 
-注意，在这一步中我们还要“顺便”搜集模块的依赖项数组一同返回（用于dfs递归）
+注意，在这一步中我们还可以“顺便”搜集模块的依赖项数组一同返回（用于dfs递归）
 
 ```jsx
 const parser = require('@babel/parser')
@@ -485,31 +479,67 @@ convertNode = (node, dirpath, relyInModule) => {
  * 发射文件,生成最终的bundle.js
  */
 emitFile() { // 发射打包后的输出结果文件
-  // 获取输出文件路径
-  const outputFile = path.join(this.distPath, this.distName);
-  // 获取输出文件模板
-  const templateStr = fs.readFileSync(path.join(__dirname, '..', "template.ejs"), 'utf-8');
-  // 渲染输出文件模板
-  const code = ejs.render(templateStr, {entryId: this.entryId, modules: this.compilation.moduleMap});
-  
-  this.assets = {};
-  this.assets[outputFile] = code;
-  // 将渲染后的代码写入输出文件中
-  fs.writeFile(outputFile, this.assets[outputFile], function(e) {
-    if (e) {
-      console.log('[Error] ' + e)
-    } else {
-      console.log('[Success] 编译成功')
-    }
-  });
+  // 首先对比缓存判断文件是否变化
+  const assets = this.compilation.assets
+  const pastAssets = this.getStorageCache()
+  if (loadsh.isEqual(assets, pastAssets)) {
+    // 如果文件hash值没有变化，说明无需重写文件
+    // 只需要依次判断每个对应的文件是否存在即可
+    // 这一步省略！
+  } else {
+    // 缓存未能命中
+    // 获取输出文件路径
+    const outputFile = path.join(this.distPath, this.distName);
+    // 获取输出文件模板
+    // const templateStr = this.generateSourceCode(path.join(__dirname, '..', "bundleTemplate.ejs"));
+    const templateStr = fs.readFileSync(path.join(__dirname, '..', "template.ejs"), 'utf-8');
+    // 渲染输出文件模板
+    const code = ejs.render(templateStr, {entryId: this.entryId, modules: this.compilation.moduleMap});
+    
+    this.assets = {};
+    this.assets[outputFile] = code;
+    // 将渲染后的代码写入输出文件中
+    fs.writeFile(outputFile, this.assets[outputFile], function(e) {
+      if (e) {
+        console.log('[Error] ' + e)
+      } else {
+        console.log('[Success] 编译成功')
+      }
+    });
+    // 将缓存信息写入缓存文件
+    fs.writeFileSync(resolve(this.distPath, 'manifest.json'), JSON.stringify(assets, null, 2))
+  }
 }
 ```
+
+在这一步中我们根据文件内容生成的Md5Hash去对比之前的缓存来加快打包速度，细心的同学会发现webpack每次打包都会生成一个缓存文件 `manifest.json`，形如
+
+```json
+{
+  "main.js": "./js/main7b6b4.js",
+  "main.css": "./css/maincc69a7ca7d74e1933b9d.css",
+  "main.js.map": "./js/main7b6b4.js.map",
+  "vendors~main.js": "./js/vendors~main3089a.js",
+  "vendors~main.css": "./css/vendors~maincc69a7ca7d74e1933b9d.css",
+  "vendors~main.js.map": "./js/vendors~main3089a.js.map",
+  "js/28505f.js": "./js/28505f.js",
+  "js/28505f.js.map": "./js/28505f.js.map",
+  "js/34c834.js": "./js/34c834.js",
+  "js/34c834.js.map": "./js/34c834.js.map",
+  "js/4d218c.js": "./js/4d218c.js",
+  "js/4d218c.js.map": "./js/4d218c.js.map",
+  "index.html": "./index.html",
+  "static/initGlobalSize.js": "./static/initGlobalSize.js"
+}
+```
+
+这也是文件上传中很常见的一个步骤，这里就不做详细的展开了，详细的做法可以参照[大规格文件的上传优化](https://jelly.jd.com/article/5e734631affa8301490877f1)
 
 ---
 
 ## 检验
 
-做完这一步，我们已经基本大功告成了（误：如果不考虑令人智息的debug过程的话），在 `package.json` 里面配置好打包脚本
+做完这一步，我们已经基本大功告成了（误：如果不考虑令人智息的debug过程的话），接下来我们在 `package.json` 里面配置好打包脚本
 
 ```jsx
 "scripts": {
@@ -519,19 +549,19 @@ emitFile() { // 发射打包后的输出结果文件
 
 运行 `yarn build` 
 
-![](./readme/WechatIMG5.png)
+![](https://img20.360buyimg.com/ling/jfs/t1/147348/29/2960/50000/5f0de3e7E082c2f55/3c1610920e803437.png)
 
 然后我们将bundle.js放进 `index.html` 中，打开浏览器。(*@ο@*) 哇～激动人心的时刻到了。
 
 然而...
 
-![](./readme/WechatIMG6.png)
+![](https://img11.360buyimg.com/ling/jfs/t1/145418/40/2916/46341/5f0de3e7E2ca40db8/45988c2691bd7dd5.png)
 
-虽然但是，看到我打包出来的这一坨奇怪的东西报错，心里还是有点想笑的。检查了一下发现是因为反引号遇到注释中的反引号于是拼接字符串提前结束了。fine，那么我在babel traverse时加了几句代码，删除掉了代码中所有的注释。但是随之而来的又是其他的一些没完没了的问题...
+看着打包出来的这一坨奇怪的东西报错，心里还是有点想笑的。检查了一下发现是因为反引号遇到注释中的反引号于是拼接字符串提前结束了。fine，那么我在babel traverse时加了几句代码，删除掉了代码中所有的注释。但是随之而来的又是其他的一些没完没了的问题...
 
-好吧，可能我们缺少了一些实际react生产打包中必须的步骤，但是这毕竟也不在我们今天讨论的话题当中。突然，我脑中想起了凹凸实验室早期自研的高性能，兼容性优秀，紧跟react版本的类react框架 `NervJS` ，或许NervJS平易近人(误)的代码能够支持这款令人抱歉的打包工具
+好吧，可能我们缺少了一些实际react生产打包中必须的步骤，但是这毕竟也不在今天讨论的话题当中。这时，鬼魅的框架涌上心头。我脑中想起了凹凸实验室自研的高性能，兼容性优秀，紧跟react版本的类react框架 `NervJS` ，或许NervJS平易近人(误)的代码能够支持这款令人抱歉的打包工具
 
-于是在 `babel.config.js` 中配置alias来替换react依赖项。
+于是我们在 `babel.config.js` 中配置alias来替换react依赖项。(React项目转NervJS就是这么简单)
 
 ```jsx
 module.exports = function (api) {
@@ -559,11 +589,11 @@ module.exports = function (api) {
 
 运行 `yarn build` 
 
-![](./readme/WechatIMG8.png)
-![](./readme/WechatIMG10.png)
+![](https://img20.360buyimg.com/ling/jfs/t1/148735/14/2857/18344/5f0de3e7Eb9760f9a/500e758a8898ee15.png)
+![](https://img30.360buyimg.com/ling/jfs/t1/137151/34/4502/17418/5f0de3e7E556d045b/a2120b923d962464.png)
 
-代码终于成功运行了起来，虽然存在着许多的问题，但是至少这个 `jerkpack` 在设计如此简单的情况下已经有能力支持大部分JS框架了。感兴趣的同学也可以自己尝试写一写，或者直接从[这里](https://github.com/XHFkindergarten/jerkpack)clone下来看
+(*@ο@*) 哇～代码终于成功运行了起来，虽然存在着许多的问题，但是至少这个 `webpack` 在设计如此简单的情况下已经有能力支持大部分JS框架了。感兴趣的同学也可以自己尝试写一写，或者直接从[这里](https://github.com/XHFkindergarten/jerkpack)clone下来看
 
-毫无疑问，webpack是一个非常优秀的代码模块打包工具（虽然它的官网非常低调的没有任何slogen）。一款非常优秀的工具/框架，必然是在保持了自己本身的特性的同时，同时能够赋予其他开发者在其基础上拓展设想之外作品的能力。如果有能力深入学习这些工具，对于我们在代码工程领域的认知也会有很大的提升。
+毫无疑问，webpack是一个非常优秀的代码模块打包工具（虽然它的官网非常低调的没有任何slogen）。一款非常优秀的工具，必然是在保持了自己本身的特性的同时，同时能够赋予其他开发者在其基础上拓展设想之外作品的能力。如果有能力深入学习这些工具，对于我们在代码工程领域的认知也会有很大的提升。
 
 end
