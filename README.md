@@ -391,7 +391,7 @@ parse(source, dirpath) {
   const ast = parser.parse(source)
   const relyInModule = [] // 获取文件依赖的所有模块
   traverse(ast, {
-    // 检索所有的词法分析节点,当遇到函数调用表达式的时候执行,对ast树进行改写
+    // 检索所有的词法分析节点，当遇到函数调用表达式的时候执行，对ast树进行改写
     CallExpression(p) {
       // 有些require是被_interopRequireDefault包裹的
       // 所以需要先找到_interopRequireDefault节点
@@ -420,7 +420,7 @@ convertNode = (node, dirpath, relyInModule) => {
   let moduleKey = completeFilePath(getRootPath(dirpath, moduleName, this.root))
   // 收集module数组
   relyInModule.push(moduleKey)
-  // 替换__webpack_require__的参数字符串，因为这个字符串也是对应模块的moduleKey,需要保持统一
+  // 替换__webpack_require__的参数字符串，因为这个字符串也是对应模块的moduleKey，需要保持统一
   // 因为ast树中的每一个元素都是babel节点，所以需要使用'@babel/types'来进行生成
   node.arguments = [ types.stringLiteral(moduleKey) ]
 }
@@ -476,7 +476,7 @@ convertNode = (node, dirpath, relyInModule) => {
 
 ```jsx
 /**
- * 发射文件,生成最终的bundle.js
+ * 发射文件，生成最终的bundle.js
  */
 emitFile() { // 发射打包后的输出结果文件
   // 首先对比缓存判断文件是否变化
@@ -533,7 +533,7 @@ emitFile() { // 发射打包后的输出结果文件
 }
 ```
 
-这也是文件上传中很常见的一个步骤，这里就不做详细的展开了，详细的做法可以参照[大规格文件的上传优化](https://jelly.jd.com/article/5e734631affa8301490877f1)
+这也是文件上传中很常见的一个步骤，这里就不做详细的展开了
 
 ---
 
